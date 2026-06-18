@@ -1,0 +1,378 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); color: var(--color-text-primary); }
+  .app { padding: 1.5rem 0; max-width: 680px; }
+  .header { margin-bottom: 1.5rem; }
+  .header h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  .header p { font-size: 14px; color: var(--color-text-secondary); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 13px; color: var(--color-text-secondary); font-weight: 500; }
+  input, select, textarea { width: 100%; }
+  textarea { resize: vertical; min-height: 80px; }
+  .char-count { font-size: 12px; text-align: right; margin-top: 2px; }
+  .char-count.ok { color: var(--color-text-success); }
+  .char-count.warn { color: var(--color-text-warning); }
+  .char-count.bad { color: var(--color-text-danger); }
+  .generate-btn { width: 100%; padding: 10px; font-size: 15px; font-weight: 500; cursor: pointer; background: var(--color-background-primary); border: 1.5px solid var(--color-border-primary); border-radius: var(--border-radius-md); color: var(--color-text-primary); margin-top: 8px; transition: background 0.15s; }
+  .generate-btn:hover { background: var(--color-background-secondary); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .results { margin-top: 1.5rem; display: none; }
+  .results.visible { display: block; }
+  .result-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
+  .result-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .result-card-header h3 { font-size: 14px; font-weight: 500; color: var(--color-text-secondary); }
+  .copy-btn { font-size: 12px; background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 4px 10px; cursor: pointer; color: var(--color-text-secondary); display: flex; align-items: center; gap: 4px; }
+  .copy-btn:hover { background: var(--color-background-secondary); }
+  .result-text { font-size: 14px; line-height: 1.6; color: var(--color-text-primary); white-space: pre-wrap; }
+  .keywords-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .keyword-tag { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 20px; padding: 4px 12px; font-size: 13px; color: var(--color-text-primary); }
+  .categories-list { display: flex; flex-direction: column; gap: 6px; }
+  .category-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .category-item i { color: var(--color-text-secondary); font-size: 16px; }
+  .loading-bar { display: none; margin-top: 8px; background: var(--color-background-secondary); border-radius: 4px; height: 4px; overflow: hidden; }
+  .loading-bar.active { display: block; }
+  .loading-fill { height: 100%; width: 0%; background: var(--color-border-primary); border-radius: 4px; animation: loadprogress 3s ease-in-out forwards; }
+  @keyframes loadprogress { 0%{width:0%} 60%{width:75%} 90%{width:90%} }
+  .section-divider { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin: 1.5rem 0 0.75rem; display: flex; align-items: center; gap: 8px; }
+  .section-divider::after { content: ''; flex: 1; height: 0.5px; background: var(--color-border-tertiary); }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .badge-info { background: var(--color-background-info); color: var(--color-text-info); }
+  .badge-success { background: var(--color-background-success); color: var(--color-text-success); }
+  .seo-score { display: flex; align-items: center; gap: 10px; padding: 10px 1.25rem; background: var(--color-background-secondary); border-radius: var(--border-radius-md); margin-bottom: 12px; }
+  .score-num { font-size: 22px; font-weight: 500; }
+  .score-label { font-size: 13px; color: var(--color-text-secondary); }
+</style>
+
+<div class="app">
+  <h2 class="sr-only">KDP SEO Metadata Generator — enter your book details to generate optimized Amazon KDP metadata</h2>
+  
+  <div class="header">
+    <h1><i class="ti ti-book" aria-hidden="true" style="font-size:20px; margin-right:6px; vertical-align:-2px;"></i>KDP SEO metadata generator</h1>
+    <p>Generate optimized titles, descriptions, and keywords for Amazon Kindle Direct Publishing</p>
+  </div>
+
+  <div class="section-divider">Book details</div>
+
+  <div class="form-grid">
+    <div class="form-group">
+      <label for="bookTitle">Book title *</label>
+      <input type="text" id="bookTitle" placeholder="e.g. The Silent Garden" />
+    </div>
+    <div class="form-group">
+      <label for="authorName">Author name</label>
+      <input type="text" id="authorName" placeholder="e.g. Jane Smith" />
+    </div>
+    <div class="form-group">
+      <label for="genre">Genre / category *</label>
+      <select id="genre">
+        <option value="">Select a genre...</option>
+        <optgroup label="Fiction">
+          <option>Romance</option>
+          <option>Mystery & Thriller</option>
+          <option>Science Fiction</option>
+          <option>Fantasy</option>
+          <option>Historical Fiction</option>
+          <option>Horror</option>
+          <option>Literary Fiction</option>
+          <option>Young Adult Fiction</option>
+          <option>Children's Fiction</option>
+          <option>Adventure</option>
+          <option>Women's Fiction</option>
+          <option>Cozy Mystery</option>
+        </optgroup>
+        <optgroup label="Non-Fiction">
+          <option>Self-Help & Personal Development</option>
+          <option>Business & Entrepreneurship</option>
+          <option>Health & Wellness</option>
+          <option>Memoir & Biography</option>
+          <option>True Crime</option>
+          <option>History</option>
+          <option>Science & Technology</option>
+          <option>Parenting & Family</option>
+          <option>Cooking & Food</option>
+          <option>Travel</option>
+          <option>Finance & Investing</option>
+          <option>Religion & Spirituality</option>
+          <option>Politics & Social Sciences</option>
+        </optgroup>
+        <optgroup label="Special Formats">
+          <option>Poetry</option>
+          <option>Short Stories / Anthology</option>
+          <option>Graphic Novel / Comic</option>
+          <option>Academic / Textbook</option>
+          <option>How-To / Guides</option>
+          <option>Journals & Planners</option>
+          <option>Low Content Books</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="subgenre">Subgenre / tropes (optional)</label>
+      <input type="text" id="subgenre" placeholder="e.g. enemies to lovers, small town" />
+    </div>
+    <div class="form-group full">
+      <label for="synopsis">Brief synopsis or book concept *</label>
+      <textarea id="synopsis" placeholder="Describe your book in a few sentences — plot, main themes, target audience, unique selling points..."></textarea>
+    </div>
+    <div class="form-group">
+      <label for="targetAudience">Target audience</label>
+      <input type="text" id="targetAudience" placeholder="e.g. women 25–45, entrepreneurs" />
+    </div>
+    <div class="form-group">
+      <label for="comparables">Comparable titles (optional)</label>
+      <input type="text" id="comparables" placeholder="e.g. similar to Gone Girl, James Clear" />
+    </div>
+    <div class="form-group full">
+      <label for="keywords">Your own keywords (optional)</label>
+      <input type="text" id="keywords" placeholder="e.g. cozy mystery, cottage, amateur sleuth — comma separated" />
+    </div>
+  </div>
+
+  <div class="section-divider">Output options</div>
+  <div class="form-grid" style="margin-bottom: 0;">
+    <div class="form-group">
+      <label for="outputType">What to generate</label>
+      <select id="outputType">
+        <option value="all">Everything (title, description, keywords, categories)</option>
+        <option value="title">Optimized title + subtitle only</option>
+        <option value="description">Book description only</option>
+        <option value="keywords">7 KDP keywords only</option>
+        <option value="categories">Amazon categories only</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="tone">Description tone</label>
+      <select id="tone">
+        <option>Dramatic & suspenseful</option>
+        <option>Warm & inviting</option>
+        <option>Professional & authoritative</option>
+        <option>Playful & fun</option>
+        <option>Emotional & heartfelt</option>
+        <option>Bold & punchy</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="generate-btn" id="generateBtn" onclick="generateMetadata()">
+    <i class="ti ti-sparkles" aria-hidden="true"></i> Generate SEO metadata ↗
+  </button>
+  <div class="loading-bar" id="loadingBar"><div class="loading-fill" id="loadingFill"></div></div>
+
+  <div class="results" id="results"></div>
+</div>
+
+<script>
+async function generateMetadata() {
+  const title = document.getElementById('bookTitle').value.trim();
+  const genre = document.getElementById('genre').value;
+  const synopsis = document.getElementById('synopsis').value.trim();
+  
+  if (!title || !genre || !synopsis) {
+    alert('Please fill in book title, genre, and synopsis to continue.');
+    return;
+  }
+
+  const author = document.getElementById('authorName').value.trim();
+  const subgenre = document.getElementById('subgenre').value.trim();
+  const audience = document.getElementById('targetAudience').value.trim();
+  const comparables = document.getElementById('comparables').value.trim();
+  const ownKeywords = document.getElementById('keywords').value.trim();
+  const outputType = document.getElementById('outputType').value;
+  const tone = document.getElementById('tone').value;
+
+  const btn = document.getElementById('generateBtn');
+  const loadingBar = document.getElementById('loadingBar');
+  const loadingFill = document.getElementById('loadingFill');
+  const resultsEl = document.getElementById('results');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader" aria-hidden="true"></i> Generating...';
+  loadingBar.classList.add('active');
+  loadingFill.style.animation = 'none';
+  void loadingFill.offsetWidth;
+  loadingFill.style.animation = 'loadprogress 4s ease-in-out forwards';
+  resultsEl.classList.remove('visible');
+
+  const outputInstructions = {
+    all: 'Generate ALL of the following sections: 1) OPTIMIZED_TITLE, 2) BOOK_DESCRIPTION, 3) KDP_KEYWORDS, 4) AMAZON_CATEGORIES, 5) SEO_TIPS',
+    title: 'Generate only: 1) OPTIMIZED_TITLE section',
+    description: 'Generate only: 1) BOOK_DESCRIPTION section',
+    keywords: 'Generate only: 1) KDP_KEYWORDS section',
+    categories: 'Generate only: 1) AMAZON_CATEGORIES section'
+  };
+
+  const prompt = `You are an expert Amazon KDP publishing consultant and SEO specialist. Generate optimized metadata for the following book.
+
+BOOK DETAILS:
+- Title: ${title}
+- Author: ${author || 'Not provided'}
+- Genre: ${genre}${subgenre ? `\n- Subgenre/Tropes: ${subgenre}` : ''}
+- Synopsis: ${synopsis}${audience ? `\n- Target Audience: ${audience}` : ''}${comparables ? `\n- Comparable Titles: ${comparables}` : ''}${ownKeywords ? `\n- Author's Keywords: ${ownKeywords}` : ''}
+- Description tone: ${tone}
+
+${outputInstructions[outputType]}
+
+Respond ONLY with valid JSON, no markdown, no preamble. Use this exact structure (include only sections requested):
+{
+  "optimized_title": {
+    "main_title": "string (keyword-rich, compelling, under 60 chars)",
+    "subtitle": "string (expands on title, adds searchable keywords, under 100 chars)",
+    "series_potential": "string (optional series name if applicable or null)"
+  },
+  "book_description": {
+    "hook": "string (1-2 gripping opening sentences)",
+    "body": "string (2-3 paragraphs, HTML bold tags allowed for emphasis, emotional + informational)",
+    "cta": "string (1 strong call-to-action sentence)",
+    "full_html": "string (complete HTML-formatted description ready to paste into KDP, under 4000 chars)"
+  },
+  "kdp_keywords": {
+    "keywords": ["keyword phrase 1", "keyword phrase 2", "keyword phrase 3", "keyword phrase 4", "keyword phrase 5", "keyword phrase 6", "keyword phrase 7"],
+    "rationale": ["reason for kw1", "reason for kw2", "reason for kw3", "reason for kw4", "reason for kw5", "reason for kw6", "reason for kw7"]
+  },
+  "amazon_categories": {
+    "primary": "string (full Amazon category path)",
+    "secondary": "string (full Amazon category path)",
+    "tertiary": "string (alternative category path)",
+    "browse_categories": ["Kindle Store > Kindle eBooks > ...", "Books > ..."]
+  },
+  "seo_tips": {
+    "score": 78,
+    "strengths": ["strength 1", "strength 2"],
+    "improvements": ["tip 1", "tip 2", "tip 3"]
+  }
+}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const raw = data.content?.find(b => b.type === 'text')?.text || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    renderResults(result, outputType);
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="result-card"><p style="color:var(--color-text-danger)"><i class="ti ti-alert-circle"></i> Something went wrong. Please try again.</p></div>`;
+    resultsEl.classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-sparkles" aria-hidden="true"></i> Generate SEO metadata ↗';
+    loadingBar.classList.remove('active');
+  }
+}
+
+function copy(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="ti ti-check"></i> Copied';
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  });
+}
+
+function renderResults(data, outputType) {
+  const el = document.getElementById('results');
+  let html = '';
+
+  if (data.seo_tips) {
+    const score = data.seo_tips.score || 75;
+    const scoreColor = score >= 80 ? 'var(--color-text-success)' : score >= 60 ? 'var(--color-text-warning)' : 'var(--color-text-danger)';
+    html += `<div class="seo-score">
+      <span class="score-num" style="color:${scoreColor}">${score}</span>
+      <div><p style="font-size:13px;font-weight:500">SEO score</p><p class="score-label">Based on your book details</p></div>
+    </div>`;
+  }
+
+  if (data.optimized_title) {
+    const t = data.optimized_title;
+    const fullTitle = t.subtitle ? `${t.main_title}: ${t.subtitle}` : t.main_title;
+    html += `<div class="result-card">
+      <div class="result-card-header">
+        <h3><i class="ti ti-heading" aria-hidden="true" style="margin-right:4px;"></i>Optimized title</h3>
+        <button class="copy-btn" onclick="copy(${JSON.stringify(fullTitle)}, this)"><i class="ti ti-copy"></i> Copy</button>
+      </div>
+      <p style="font-size:17px;font-weight:500;line-height:1.4;margin-bottom:8px;">${t.main_title}</p>
+      ${t.subtitle ? `<p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:8px;">${t.subtitle}</p>` : ''}
+      ${t.series_potential ? `<span class="badge badge-info"><i class="ti ti-books" aria-hidden="true"></i> Series: ${t.series_potential}</span>` : ''}
+    </div>`;
+  }
+
+  if (data.book_description) {
+    const d = data.book_description;
+    html += `<div class="result-card">
+      <div class="result-card-header">
+        <h3><i class="ti ti-align-left" aria-hidden="true" style="margin-right:4px;"></i>Book description</h3>
+        <button class="copy-btn" onclick="copy(${JSON.stringify(d.full_html || d.hook + '\n\n' + d.body + '\n\n' + d.cta)}, this)"><i class="ti ti-copy"></i> Copy HTML</button>
+      </div>
+      <div style="font-size:14px;line-height:1.7;border-left:2px solid var(--color-border-secondary);padding-left:12px;margin-bottom:10px;color:var(--color-text-secondary);">${d.hook}</div>
+      <div style="font-size:14px;line-height:1.7;margin-bottom:10px;" class="result-text">${d.body}</div>
+      <div style="font-size:13px;font-weight:500;padding:8px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);">${d.cta}</div>
+    </div>`;
+  }
+
+  if (data.kdp_keywords) {
+    const kws = data.kdp_keywords;
+    html += `<div class="result-card">
+      <div class="result-card-header">
+        <h3><i class="ti ti-tag" aria-hidden="true" style="margin-right:4px;"></i>7 KDP keywords</h3>
+        <button class="copy-btn" onclick="copy(${JSON.stringify(kws.keywords.join(', '))}, this)"><i class="ti ti-copy"></i> Copy all</button>
+      </div>
+      <div class="keywords-grid">`;
+    kws.keywords.forEach((kw, i) => {
+      html += `<div style="display:flex;flex-direction:column;gap:2px;">
+        <span class="keyword-tag">${kw}</span>
+        ${kws.rationale?.[i] ? `<span style="font-size:11px;color:var(--color-text-secondary);padding:0 4px;">${kws.rationale[i]}</span>` : ''}
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  if (data.amazon_categories) {
+    const cats = data.amazon_categories;
+    html += `<div class="result-card">
+      <div class="result-card-header">
+        <h3><i class="ti ti-category" aria-hidden="true" style="margin-right:4px;"></i>Amazon categories</h3>
+        <button class="copy-btn" onclick="copy(${JSON.stringify([cats.primary, cats.secondary, cats.tertiary].filter(Boolean).join('\n'))}, this)"><i class="ti ti-copy"></i> Copy</button>
+      </div>
+      <div class="categories-list">`;
+    [[cats.primary, 'Primary'], [cats.secondary, 'Secondary'], [cats.tertiary, 'Alternative']].forEach(([cat, label]) => {
+      if (cat) html += `<div class="category-item"><span class="badge badge-info" style="min-width:72px;text-align:center;">${label}</span><span style="font-size:13px;color:var(--color-text-secondary);">${cat}</span></div>`;
+    });
+    if (cats.browse_categories?.length) {
+      html += `<div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--color-border-tertiary);">
+        <p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px;">Browse categories</p>`;
+      cats.browse_categories.forEach(c => { html += `<p style="font-size:13px;margin-bottom:4px;">${c}</p>`; });
+      html += `</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  if (data.seo_tips) {
+    const tips = data.seo_tips;
+    html += `<div class="result-card">
+      <div class="result-card-header"><h3><i class="ti ti-bulb" aria-hidden="true" style="margin-right:4px;"></i>SEO tips for this book</h3></div>`;
+    if (tips.strengths?.length) {
+      html += `<p style="font-size:12px;font-weight:500;color:var(--color-text-success);margin-bottom:6px;"><i class="ti ti-check"></i> What's working</p>`;
+      tips.strengths.forEach(s => { html += `<p style="font-size:13px;margin-bottom:4px;padding-left:8px;">• ${s}</p>`; });
+    }
+    if (tips.improvements?.length) {
+      html += `<p style="font-size:12px;font-weight:500;color:var(--color-text-warning);margin:12px 0 6px;"><i class="ti ti-arrow-up"></i> Improvements</p>`;
+      tips.improvements.forEach(t => { html += `<p style="font-size:13px;margin-bottom:4px;padding-left:8px;">• ${t}</p>`; });
+    }
+    html += `</div>`;
+  }
+
+  el.innerHTML = html;
+  el.classList.add('visible');
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
